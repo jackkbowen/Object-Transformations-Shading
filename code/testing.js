@@ -1,17 +1,26 @@
-// ColoredCube.js (c) 2012 matsuda
+// LightedCube.js (c) 2012 matsuda
 // Vertex shader program
-var VSHADER_SOURCE =
-  'attribute vec4 a_Position;\n' +
-  'attribute vec4 a_Color;\n' +
+var VSHADER_SOURCE = 
+  'attribute vec4 a_Position;\n' + 
+  'attribute vec4 a_Color;\n' + 
+  'attribute vec4 a_Normal;\n' +        // Normal
   'uniform mat4 u_MvpMatrix;\n' +
+  'uniform vec3 u_LightColor;\n' +     // Light color
+  'uniform vec3 u_LightDirection;\n' + // Light direction (in the world coordinate, normalized)
   'varying vec4 v_Color;\n' +
   'void main() {\n' +
-  '  gl_Position = u_MvpMatrix * a_Position;\n' +
-  '  v_Color = a_Color;\n' +
+  '  gl_Position = u_MvpMatrix * a_Position ;\n' +
+  // Make the length of the normal 1.0
+  '  vec3 normal = normalize(a_Normal.xyz);\n' +
+  // Dot product of the light direction and the orientation of a surface (the normal)
+  '  float nDotL = max(dot(u_LightDirection, normal), 0.0);\n' +
+  // Calculate the color due to diffuse reflection
+  '  vec3 diffuse = u_LightColor * a_Color.rgb * nDotL;\n' +
+  '  v_Color = vec4(diffuse, a_Color.a);\n' +
   '}\n';
 
 // Fragment shader program
-var FSHADER_SOURCE =
+var FSHADER_SOURCE = 
   '#ifdef GL_ES\n' +
   'precision mediump float;\n' +
   '#endif\n' +
@@ -37,7 +46,7 @@ function main() {
     return;
   }
 
-  // Set the vertex information
+  // Set the vertex coordinates, the color and the normal
   var n = initVertexBuffers(gl);
   if (n < 0) {
     console.log('Failed to set the vertex information');
@@ -45,31 +54,36 @@ function main() {
   }
 
   // Set the clear color and enable the depth test
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearColor(0, 0, 0, 1);
   gl.enable(gl.DEPTH_TEST);
 
-  // Get the storage location of u_MvpMatrix
+  // Get the storage locations of uniform variables and so on
   var u_MvpMatrix = gl.getUniformLocation(gl.program, 'u_MvpMatrix');
-  if (!u_MvpMatrix) {
-    console.log('Failed to get the storage location of u_MvpMatrix');
+  var u_LightColor = gl.getUniformLocation(gl.program, 'u_LightColor');
+  var u_LightDirection = gl.getUniformLocation(gl.program, 'u_LightDirection');
+  if (!u_MvpMatrix || !u_LightColor || !u_LightDirection) { 
+    console.log('Failed to get the storage location');
     return;
   }
 
-  // Set the eye point and the viewing volume
-  var mvpMatrix = new Matrix4();
-  mvpMatrix.setPerspective(30, 1, 1, 100);
-  mvpMatrix.lookAt(3, 3, 7, 0, 0, 0, 0, 1, 0);
+  // Set the light color (white)
+  gl.uniform3f(u_LightColor, 1.0, 1.0, 1.0);
+  // Set the light direction (in the world coordinate)
+  var lightDirection = new Vector3([0.5, 3.0, 4.0]);
+  lightDirection.normalize();     // Normalize
+  gl.uniform3fv(u_LightDirection, lightDirection.elements);
 
-  // Pass the model view projection matrix to u_MvpMatrix
+  // Calculate the view projection matrix
+  var mvpMatrix = new Matrix4();    // Model view projection matrix
+  mvpMatrix.setPerspective(30, canvas.width/canvas.height, 1, 100);
+  mvpMatrix.lookAt(3, 3, 7, 0, 0, 0, 0, 1, 0);
+  // Pass the model view projection matrix to the variable u_MvpMatrix
   gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
 
   // Clear color and depth buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Draw the cube
-  // LINE_LOOP for wireframe
-  // TRIANGLES for polygon
-  gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
+  gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);   // Draw the cube
 }
 
 function initVertexBuffers(gl) {
@@ -81,57 +95,96 @@ function initVertexBuffers(gl) {
   //  | |v7---|-|v4
   //  |/      |/
   //  v2------v3
+  var vertices = new Float32Array([   // Coordinates
+     1.0, 1.0, 1.0,  -1.0, 1.0, 1.0,  -1.0,-1.0, 1.0,   1.0,-1.0, 1.0, // v0-v1-v2-v3 front
+     1.0, 1.0, 1.0,   1.0,-1.0, 1.0,   1.0,-1.0,-1.0,   1.0, 1.0,-1.0, // v0-v3-v4-v5 right
+     1.0, 1.0, 1.0,   1.0, 1.0,-1.0,  -1.0, 1.0,-1.0,  -1.0, 1.0, 1.0, // v0-v5-v6-v1 up
+    -1.0, 1.0, 1.0,  -1.0, 1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0,-1.0, 1.0, // v1-v6-v7-v2 left
+    -1.0,-1.0,-1.0,   1.0,-1.0,-1.0,   1.0,-1.0, 1.0,  -1.0,-1.0, 1.0, // v7-v4-v3-v2 down
+     1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0  // v4-v7-v6-v5 back
+  ]);
 
-  var vertices = new Float32Array([   // Vertex coordinates
-     1.0, 1.0, 1.0,  -1.0, 1.0, 1.0,  -1.0,-1.0, 1.0,   1.0,-1.0, 1.0,  // v0-v1-v2-v3 front
-     1.0, 1.0, 1.0,   1.0,-1.0, 1.0,   1.0,-1.0,-1.0,   1.0, 1.0,-1.0,  // v0-v3-v4-v5 right
-     1.0, 1.0, 1.0,   1.0, 1.0,-1.0,  -1.0, 1.0,-1.0,  -1.0, 1.0, 1.0,  // v0-v5-v6-v1 up
-    -1.0, 1.0, 1.0,  -1.0, 1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0,-1.0, 1.0,  // v1-v6-v7-v2 left
-    -1.0,-1.0,-1.0,   1.0,-1.0,-1.0,   1.0,-1.0, 1.0,  -1.0,-1.0, 1.0,  // v7-v4-v3-v2 down
-     1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0   // v4-v7-v6-v5 back
+  // Apply rotation to vertices
+  const rotationMatrix = rotateXMatrix(0);
+
+  for (let i = 0; i < vertices.length; i += 3) {
+    const x = vertices[i];
+    const y = vertices[i + 1];
+    const z = vertices[i + 2];
+
+    vertices[i] = rotationMatrix[0] * x + rotationMatrix[4] * y + rotationMatrix[8] * z + rotationMatrix[12];
+    vertices[i + 1] = rotationMatrix[1] * x + rotationMatrix[5] * y + rotationMatrix[9] * z + rotationMatrix[13];
+    vertices[i + 2] = rotationMatrix[2] * x + rotationMatrix[6] * y + rotationMatrix[10] * z + rotationMatrix[14];
+  }
+
+  // Apply scaling and translation
+  const scaleFactor = 1/3;
+  const translationX = -1;
+
+  for (let i = 0; i < vertices.length; i += 3) {
+    // Scale down by 1/3
+    vertices[i] *= scaleFactor;
+    vertices[i + 1] *= scaleFactor;
+    vertices[i + 2] *= scaleFactor;
+
+    // Translate to the left
+    vertices[i] += translationX;
+}
+
+
+
+  var colors = new Float32Array([    // Colors
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v1-v2-v3 front
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v3-v4-v5 right
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v5-v6-v1 up
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v1-v6-v7-v2 left
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v7-v4-v3-v2 down
+    1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0　    // v4-v7-v6-v5 back
+ ]);
+
+
+  var normals = new Float32Array([    // Normal
+    0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,  // v0-v1-v2-v3 front
+    1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,  // v0-v3-v4-v5 right
+    0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,  // v0-v5-v6-v1 up
+   -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  // v1-v6-v7-v2 left
+    0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,  // v7-v4-v3-v2 down
+    0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0   // v4-v7-v6-v5 back
   ]);
 
 
-
-  var colors = new Float32Array([     // Colors
-    0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  // v0-v1-v2-v3 front(blue)
-    0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  // v0-v3-v4-v5 right(green)
-    0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  // v0-v5-v6-v1 up(red)
-    0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  // v1-v6-v7-v2 left
-    0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  // v7-v4-v3-v2 down
-    0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,  0.4, 0.4, 1.0,   // v4-v7-v6-v5 back
-  ]);
-
-  var indices = new Uint8Array([       // Indices of the vertices
+  // Indices of the vertices
+  var indices = new Uint8Array([
      0, 1, 2,   0, 2, 3,    // front
      4, 5, 6,   4, 6, 7,    // right
      8, 9,10,   8,10,11,    // up
     12,13,14,  12,14,15,    // left
     16,17,18,  16,18,19,    // down
     20,21,22,  20,22,23     // back
-  ]);
+ ]);
 
-  // Create a buffer object
-  var indexBuffer = gl.createBuffer();
-  if (!indexBuffer) 
-    return -1;
 
-  // Write the vertex coordinates and color to the buffer object
-  if (!initArrayBuffer(gl, vertices, 3, gl.FLOAT, 'a_Position'))
-    return -1;
-
-  if (!initArrayBuffer(gl, colors, 3, gl.FLOAT, 'a_Color'))
-    return -1;
+  // Write the vertex property to buffers (coordinates, colors and normals)
+  if (!initArrayBuffer(gl, 'a_Position', vertices, 3, gl.FLOAT)) return -1;
+  if (!initArrayBuffer(gl, 'a_Color', colors, 3, gl.FLOAT)) return -1;
+  if (!initArrayBuffer(gl, 'a_Normal', normals, 3, gl.FLOAT)) return -1;
 
   // Write the indices to the buffer object
+  var indexBuffer = gl.createBuffer();
+  if (!indexBuffer) {
+    console.log('Failed to create the buffer object');
+    return false;
+  }
+
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
   return indices.length;
 }
 
-function initArrayBuffer(gl, data, num, type, attribute) {
-  var buffer = gl.createBuffer();   // Create a buffer object
+function initArrayBuffer (gl, attribute, data, num, type) {
+  // Create a buffer object
+  var buffer = gl.createBuffer();
   if (!buffer) {
     console.log('Failed to create the buffer object');
     return false;
@@ -149,5 +202,21 @@ function initArrayBuffer(gl, data, num, type, attribute) {
   // Enable the assignment of the buffer object to the attribute variable
   gl.enableVertexAttribArray(a_attribute);
 
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
   return true;
 }
+
+function rotateXMatrix(degrees) {
+  const radians = (degrees * Math.PI) / 180.0;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return new Float32Array([
+      1, 0, 0, 0,
+      0, cos, -sin, 0,
+      0, sin, cos, 0,
+      0, 0, 0, 1
+  ]);
+}
+
