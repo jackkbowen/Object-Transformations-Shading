@@ -3,18 +3,15 @@
 var VSHADER_SOURCE = 
   'attribute vec4 a_Position;\n' + 
   'attribute vec4 a_Color;\n' + 
-  'attribute vec4 a_Normal;\n' +        // Normal
+  'attribute vec4 a_Normal;\n' +        
   'uniform mat4 u_MvpMatrix;\n' +
-  'uniform vec3 u_LightColor;\n' +     // Light color
-  'uniform vec3 u_LightDirection;\n' + // Light direction (in the world coordinate, normalized)
+  'uniform vec3 u_LightColor;\n' +     
+  'uniform vec3 u_LightDirection;\n' + 
   'varying vec4 v_Color;\n' +
   'void main() {\n' +
   '  gl_Position = u_MvpMatrix * a_Position ;\n' +
-  // Make the length of the normal 1.0
   '  vec3 normal = normalize(a_Normal.xyz);\n' +
-  // Dot product of the light direction and the orientation of a surface (the normal)
   '  float nDotL = max(dot(u_LightDirection, normal), 0.0);\n' +
-  // Calculate the color due to diffuse reflection
   '  vec3 diffuse = u_LightColor * a_Color.rgb * nDotL;\n' +
   '  v_Color = vec4(diffuse, a_Color.a);\n' +
   '}\n';
@@ -30,17 +27,16 @@ var FSHADER_SOURCE =
   '}\n';
 
 function main() {
-  // Retrieve <canvas> element
+  // webgl starter code
+  // Initializes the canvas and the shaders
+  // Sets the webgl context
   var canvas = document.getElementById('webgl');
-
-  // Get the rendering context for WebGL
   var gl = getWebGLContext(canvas);
   if (!gl) {
-    console.log('Failed to get the rendering context for WebGL');
+    console.log('Your browser does not support HTML5');
     return;
   }
-
-  // Initialize shaders
+  
   if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
     console.log('Failed to intialize shaders.');
     return;
@@ -78,6 +74,7 @@ function main() {
   mvpMatrix.setPerspective(30, canvas.width/canvas.height, 1, 100);
   mvpMatrix.lookAt(3, 3, 7, 0, 0, 0, 0, 1, 0);
   // Pass the model view projection matrix to the variable u_MvpMatrix
+  mvpMatrix.rotate(30, 0, 1, 0);
   gl.uniformMatrix4fv(u_MvpMatrix, false, mvpMatrix.elements);
 
   // Clear color and depth buffer
@@ -104,19 +101,7 @@ function initVertexBuffers(gl) {
      1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0  // v4-v7-v6-v5 back
   ]);
 
-  // Apply rotation to vertices
-  const rotationMatrix = rotateXMatrix(0);
-
-  for (let i = 0; i < vertices.length; i += 3) {
-    const x = vertices[i];
-    const y = vertices[i + 1];
-    const z = vertices[i + 2];
-
-    vertices[i] = rotationMatrix[0] * x + rotationMatrix[4] * y + rotationMatrix[8] * z + rotationMatrix[12];
-    vertices[i + 1] = rotationMatrix[1] * x + rotationMatrix[5] * y + rotationMatrix[9] * z + rotationMatrix[13];
-    vertices[i + 2] = rotationMatrix[2] * x + rotationMatrix[6] * y + rotationMatrix[10] * z + rotationMatrix[14];
-  }
-
+  
   // Apply scaling and translation
   const scaleFactor = 1/3;
   const translationX = -1;
@@ -206,17 +191,3 @@ function initArrayBuffer (gl, attribute, data, num, type) {
 
   return true;
 }
-
-function rotateXMatrix(degrees) {
-  const radians = (degrees * Math.PI) / 180.0;
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
-
-  return new Float32Array([
-      1, 0, 0, 0,
-      0, cos, -sin, 0,
-      0, sin, cos, 0,
-      0, 0, 0, 1
-  ]);
-}
-
