@@ -26,6 +26,14 @@ var FSHADER_SOURCE =
   '  gl_FragColor = v_Color;\n' +
   '}\n';
 
+let wireframeToggle = true;
+
+function checkToggle() {
+  wireframeToggle = wireframeToggle ? false : true;
+  console.log(wireframeToggle);
+  
+}
+
 function main() {
   // webgl starter code
   // Initializes the canvas and the shaders
@@ -80,7 +88,9 @@ function main() {
   // Clear color and depth buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+
   gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);   // Draw the cube
+  
 }
 
 function initVertexBuffers(gl) {

@@ -1,5 +1,3 @@
-// LightedCube.js (c) 2012 matsuda
-// Vertex shader program
 var VSHADER_SOURCE = `
   attribute vec4 a_Position;
   attribute vec4 a_Color;
@@ -51,10 +49,8 @@ let wireframeToggle = true;
 function checkToggle() {
   wireframeToggle = wireframeToggle ? false : true;
   console.log(wireframeToggle);
-  //drawchair(gl, u_ModelMatrix, u_NormalMatrix, u_isLighting)
   
 }
-
 
 function main() {
   // Retrieve <canvas> element
@@ -87,12 +83,9 @@ function main() {
   var u_ProjMatrix = gl.getUniformLocation(gl.program, 'u_ProjMatrix');
   var u_LightColor = gl.getUniformLocation(gl.program, 'u_LightColor');
   var u_LightDirection = gl.getUniformLocation(gl.program, 'u_LightDirection');
-  
-  
 
   // Trigger using lighting or not
   var u_isLighting = gl.getUniformLocation(gl.program, 'u_isLighting'); 
-  
 
   if (!u_ModelMatrix || !u_ViewMatrix || !u_NormalMatrix ||
       !u_ProjMatrix || !u_LightColor || !u_LightDirection ||
@@ -104,7 +97,7 @@ function main() {
   // Set the light color (white)
   gl.uniform3f(u_LightColor, 1.0, 1.0, 1.0);
   // Set the light direction (in the world coordinate)
-  var lightDirection = new Vector3([1.0, 1.0, 1.0]);
+  var lightDirection = new Vector3([0.5, 3.0, 4.0]);
   lightDirection.normalize();     // Normalize
   gl.uniform3fv(u_LightDirection, lightDirection.elements);
 
@@ -120,11 +113,19 @@ function main() {
     keydown(ev, gl, u_ModelMatrix, u_NormalMatrix, u_isLighting);
   };
 
+  var then = 0;
 
-  //g_yAngle = (g_yAngle + 1) % 360;
+  // Draw the scene repeatedly
+  function render(now) {
+    now *= 0.001;  // convert to seconds
+    const deltaTime = now - then;
+    then = now;
+    g_yAngle = (g_yAngle + 1) % 360;
+    drawchair(gl, u_ModelMatrix, u_NormalMatrix, u_isLighting, deltaTime)
 
-  drawchair(gl, u_ModelMatrix, u_NormalMatrix, u_isLighting)
-
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
   //draw(gl, u_ModelMatrix, u_NormalMatrix, u_isLighting);
 }
 
@@ -158,17 +159,16 @@ function initVertexBuffersCube(gl) {
   //  | |v7---|-|v4
   //  |/      |/
   //  v2------v3
-  var vertices = new Float32Array([   // Vertex coordinates
-     1.0, 1.0, 1.0,  -1.0, 1.0, 1.0,  -1.0,-1.0, 1.0,   1.0,-1.0, 1.0,  // v0-v1-v2-v3 front
-     1.0, 1.0, 1.0,   1.0,-1.0, 1.0,   1.0,-1.0,-1.0,   1.0, 1.0,-1.0,  // v0-v3-v4-v5 right
-     1.0, 1.0, 1.0,   1.0, 1.0,-1.0,  -1.0, 1.0,-1.0,  -1.0, 1.0, 1.0,  // v0-v5-v6-v1 up
-    -1.0, 1.0, 1.0,  -1.0, 1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0,-1.0, 1.0,  // v1-v6-v7-v2 left
-    -1.0,-1.0,-1.0,   1.0,-1.0,-1.0,   1.0,-1.0, 1.0,  -1.0,-1.0, 1.0,  // v7-v4-v3-v2 down
-     1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0   // v4-v7-v6-v5 back
+  var vertices = new Float32Array([   // Coordinates
+     0.5, 0.5, 0.5,  -0.5, 0.5, 0.5,  -0.5,-0.5, 0.5,   0.5,-0.5, 0.5, // v0-v1-v2-v3 front
+     0.5, 0.5, 0.5,   0.5,-0.5, 0.5,   0.5,-0.5,-0.5,   0.5, 0.5,-0.5, // v0-v3-v4-v5 right
+     0.5, 0.5, 0.5,   0.5, 0.5,-0.5,  -0.5, 0.5,-0.5,  -0.5, 0.5, 0.5, // v0-v5-v6-v1 up
+    -0.5, 0.5, 0.5,  -0.5, 0.5,-0.5,  -0.5,-0.5,-0.5,  -0.5,-0.5, 0.5, // v1-v6-v7-v2 left
+    -0.5,-0.5,-0.5,   0.5,-0.5,-0.5,   0.5,-0.5, 0.5,  -0.5,-0.5, 0.5, // v7-v4-v3-v2 down
+     0.5,-0.5,-0.5,  -0.5,-0.5,-0.5,  -0.5, 0.5,-0.5,   0.5, 0.5,-0.5  // v4-v7-v6-v5 back
   ]);
 
-
-  
+  //shading based on vertices
   var colors = new Float32Array([    // Colors
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v1-v2-v3 front
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v0-v3-v4-v5 right
@@ -176,29 +176,36 @@ function initVertexBuffersCube(gl) {
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v1-v6-v7-v2 left
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0,     // v7-v4-v3-v2 down
     1, 0, 0,   1, 0, 0,   1, 0, 0,  1, 0, 0　    // v4-v7-v6-v5 back
-  ]);
+ ]);
 
 
   var normals = new Float32Array([    // Normal
     0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,   0.0, 0.0, 1.0,  // v0-v1-v2-v3 front
     1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,   1.0, 0.0, 0.0,  // v0-v3-v4-v5 right
     0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,   0.0, 1.0, 0.0,  // v0-v5-v6-v1 up
-    -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  // v1-v6-v7-v2 left
+   -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  -1.0, 0.0, 0.0,  // v1-v6-v7-v2 left
     0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,   0.0,-1.0, 0.0,  // v7-v4-v3-v2 down
     0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0,   0.0, 0.0,-1.0   // v4-v7-v6-v5 back
   ]);
 
 
-// Indices of the vertices
+  // Indices of the vertices, from which things are built from triangle
+  // 1_________2
+  // |        /|
+  // |      /  |
+  // |    /    |
+  // |  /      |
+  // |/________|
+  // 0         3
+  // A clockwise arrangement, as it were starting bottom left
   var indices = new Uint8Array([
-    0, 1, 2,   0, 2, 3,    // front
-    4, 5, 6,   4, 6, 7,    // right
-    8, 9,10,   8,10,11,    // up
+     0, 1, 2,   0, 2, 3,    // front
+     4, 5, 6,   4, 6, 7,    // right
+     8, 9,10,   8,10,11,    // up
     12,13,14,  12,14,15,    // left
     16,17,18,  16,18,19,    // down
     20,21,22,  20,22,23     // back
-  ]);
-
+ ]);
 
 
   // Write the vertex property to buffers (coordinates, colors and normals)
@@ -259,12 +266,17 @@ function drawchair(gl, u_ModelMatrix, u_NormalMatrix, u_isLighting) {
   // Clear color and depth buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  gl.uniform1i(u_isLighting, false); // Will not apply lighting
+
+  // Calculate the view matrix and the projection matrix
+  modelMatrix.setTranslate(0, 0, 0);  // No Translation
   // Pass the model matrix to the uniform variable
   gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
-  
+  // Draw x and y axes
+  gl.drawArrays(gl.LINES, 0, n);
+
   gl.uniform1i(u_isLighting, true); // Will apply lighting
-  
 
   // Set the vertex coordinates and color (for the cube)
   var n = initVertexBuffersCube(gl);
@@ -275,27 +287,51 @@ function drawchair(gl, u_ModelMatrix, u_NormalMatrix, u_isLighting) {
 
   //x,y,z 
   // Rotate, and then translate
-  modelMatrix.setTranslate(0, 0, 0);  // Translation (No translation is supported here)
+  modelMatrix.setTranslate(0, 0, -5);  // Translation (No translation is supported here)
   modelMatrix.rotate(g_yAngle, 0, 1, 0); // Rotate along y axis
   modelMatrix.rotate(g_xAngle, 1, 0, 0); // Rotate along x axis
 
   // Model the chair seat
   pushMatrix(modelMatrix);
-   // modelMatrix.scale(2.0, 0.4, 2.0); // Scale
-    modelMatrix.translate(0, 2, 2);  // Translation
-    modelMatrix.rotate(75, 0, 1, 0);
+    modelMatrix.scale(2.0, 0.4, 2.0); // Scale
     drawbox(gl, u_ModelMatrix, u_NormalMatrix, n);
   modelMatrix = popMatrix();
 
   // Model the chair back
   pushMatrix(modelMatrix);
-    modelMatrix.translate(0, -2, -2);  // Translation
-    modelMatrix.rotate(20, 0, 1, 0);
-    //modelMatrix.scale(2.0, 2.2, 0.4); // Scale
+    modelMatrix.translate(0, 1.20, -0.8);  // Translation
+    modelMatrix.scale(2.0, 2.2, 0.4); // Scale
     drawbox(gl, u_ModelMatrix, u_NormalMatrix, n);
   modelMatrix = popMatrix();
 
-  
+  //As if you were sitting on the chair;
+  //Back right leg
+  pushMatrix(modelMatrix);
+    modelMatrix.scale(0.3, 1.9, 0.3);
+    modelMatrix.translate(-2.6,-0.4,-2.6)
+    drawbox(gl, u_ModelMatrix, u_NormalMatrix, n);
+  modelMatrix = popMatrix();
+
+  //Back left leg
+  pushMatrix(modelMatrix);
+    modelMatrix.scale(0.3, 1.9, 0.3);
+    modelMatrix.translate(2.6,-0.4,-2.6)
+    drawbox(gl, u_ModelMatrix, u_NormalMatrix, n);
+  modelMatrix = popMatrix();
+
+  //Front right leg
+  pushMatrix(modelMatrix);
+    modelMatrix.scale(0.3, 1.9, 0.3);
+    modelMatrix.translate(-2.6,-0.4,2.6)
+    drawbox(gl, u_ModelMatrix, u_NormalMatrix, n);
+  modelMatrix = popMatrix();
+
+  //Front left leg
+  pushMatrix(modelMatrix);
+    modelMatrix.scale(0.3, 1.9, 0.3);
+    modelMatrix.translate(2.6,-0.4,2.6)
+    drawbox(gl, u_ModelMatrix, u_NormalMatrix, n);
+  modelMatrix = popMatrix();
 
 }
 
@@ -306,21 +342,11 @@ function drawbox(gl, u_ModelMatrix, u_NormalMatrix, n) {
     gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
 
     // Calculate the normal transformation matrix and pass it to u_NormalMatrix
-    // These are used for the in-place transformations
-    // Using only 1 buffer data, you must do the inverse to get the original transformation back
-    // WebGL coordinates are the transpose of the class convention
-
     g_normalMatrix.setInverseOf(modelMatrix); //set the normal matrix as the inverse of the current model
     g_normalMatrix.transpose();
     gl.uniformMatrix4fv(u_NormalMatrix, false, g_normalMatrix.elements);
 
-
-    if (wireframeToggle) {
-      gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
-    }
-    else {
-      gl.drawElements(gl.LINE_LOOP, n, gl.UNSIGNED_BYTE, 0);
-    }
-   
+    // Draw the cube
+    gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
   modelMatrix = popMatrix();
 }
