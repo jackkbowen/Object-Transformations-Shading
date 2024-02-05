@@ -3,28 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <title>Program 2: Transformation and Flat Shading</title>
-    <link rel="stylesheet" href="style.css">
   </head>
 
   <body onload="main()">
     <div class="container">
       <canvas id="webgl" width="500" height="500"></canvas>
       <div class="slider-container">
-        Wireframe Toggle
-        <label class="switch">
-          <input id ="wireframe"  type="checkbox" onchange="checkToggle()">
-          <span class="slider round"></span>
-        </label>
-        <label for="slider1">X Rotation:</label>
-        <input type="range" id="slider1" min="0" max="360" value="0" step="5">
-        
-  
-        <label for="slider2">Y Rotation:</label>
-        <input type="range" id="slider2" min="0" max="360" value="0" step="5">
-  
-        <label for="slider3">Z Rotation:</label>
-        <input type="range" id="slider3" min="0" max="360" value="0" step="5">
-        
+        <label for="toggleCheckbox">Wireframe Toggle </label>
+        <input type="checkbox" id="toggleCheckbox">
+       
       </div>
     </div>
 
@@ -32,6 +19,6 @@
     <script src="../lib/webgl-debug.js"></script>
     <script src="../lib/cuon-utils.js"></script>
     <script src="../lib/cuon-matrix.js"></script>
-    <script src="../code/chair.js"></script>
+    <script src="../code/cubeTransformations.js"></script>
   </body>
 </html>

@@ -4,8 +4,7 @@
     <title>Program 2: Transformation and Flat Shading</title>
     <style>
       img {
-          width: 700px;
-          height: 400px;
+          width: 30%;
           margin-left: auto;
           margin-right: auto;
 
@@ -25,23 +24,22 @@
   <p><b>Cruz ID:</b> jmbowen@ucsc.edu (1839886)</p>
   <p><b>Due Date:</b> 2/4</p>
 
-  <button onclick="document.location='code/webgl.js'">Javascript Code</button>
+  <button onclick="document.location='code/cubeTransformations.js'">Javascript Code</button>
   <button onclick="document.location='driver.html'">Driver Code</button>
 
   <hr>
 
   <h2>Features:</h2>
   <ul>
-    <li>Uses PA0 To get the line input from the user. Also user input for num of sides and T/F endcaps</li>
-    <li>Creates a surface of revolution around the Z axis</li>
+    <li>Creates 2 SORs in scene and renders them with a light source at [1, 1, 1].</li>
+    <li>Click the toggle button "Wireframe Toggle" to toggle between Flat Shading and Wireframe.</li>
+    <ul>
+      <li>Some sides of the triangles appear to be unlit at initial position, not sure if this is from the light source being at [1, 1, 1.]</li>
+      <li>Rotating the object shows that all sides are properly lit.</li>
+    </ul>
+    <li>Can rotate the objects by using the arrow keys.</li>
   </ul>
-  <h2>Challenges:</h2>
-  <ul>
-    <li>Unsure if we should be using 2d or webgl</li>
-    <li>Not sure how to use buffer objects, asked TA and he said hes teaching it next week</li>
-    <li>Unfortunately ran out of time, Monday TA section was great to get an overview of how the program should work, Friday TA section internet was down.</li>
-    <li>Wasn't able to get the SOR working, but was able to convert the points</li>
-
+  
   </ul>
   <h2>Output Image</h2>
   <img src="images/OutputScreenshot.png" alt="Output Screenshot">
