@@ -307,7 +307,7 @@ function renderObject(gl, u_MvpMatrix, u_NormalMatrix, n) {
 // 40 = Up Arrow
 function keydown(ev, gl, u_MvpMatrix, u_NormalMatrix,) {
   switch (ev.keyCode) {
-    case 40: 
+    case 100: 
       xAngle += 0.05;
       break;
     case 38: 
